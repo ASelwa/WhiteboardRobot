@@ -32,11 +32,11 @@ void setup() {
   pinMode(speedR3, OUTPUT);
   digitalWrite(speedR3, HIGH);
   pinMode(speedL1, OUTPUT);
-  digitalWrite(speedR1, HIGH);  
+  digitalWrite(speedL1, HIGH);  
   pinMode(speedL2, OUTPUT);
-  digitalWrite(speedR2, HIGH);  
+  digitalWrite(speedL2, HIGH);  
   pinMode(speedL3, OUTPUT);
-  digitalWrite(speedR3, HIGH);
+  digitalWrite(speedL3, HIGH);
   
 }
 
