@@ -13,6 +13,10 @@ int pin_speedL2 = 6;
 int pin_speedL3 = 7;
 
 int BASE_FREQ = 5000; // Hz
+int SPEED = 50 // Desired speed in mm/s
+int RADIUS = 2 // Estimate of spool radius in mm
+int WIDTH = 2000 // Estimate of whiteboard width in mm
+int HEIGHT = 1000 // Estimate of whiteboard height in mm
 
 // the setup routine runs once when you press reset:
 void setup() {                
@@ -33,45 +37,22 @@ void setup() {
   pinMode(pin_speedL2, OUTPUT);
   pinMode(pin_speedL3, OUTPUT);
   
-  digitalWrite(pin_speedR1, LOW); 
+  digitalWrite(pin_speedR1, HIGH); 
   digitalWrite(pin_speedR2, HIGH);  
-  digitalWrite(pin_speedR3, LOW);
+  digitalWrite(pin_speedR3, HIGH);
   
-  digitalWrite(pin_speedL1, LOW);  
+  digitalWrite(pin_speedL1, HIGH);  
   digitalWrite(pin_speedL2, HIGH);  
-  digitalWrite(pin_speedL3, LOW);
-  
-  // For serial printing (debugging)
-  //Serial.begin(9600);
-  
-  
+  digitalWrite(pin_speedL3, HIGH);
 }
 
-// the loop routine runs over and over again forever:
+// Main loop
 void loop() {
-  //Serial.println("Start");
-  //Serial.println(micros());
-  segment(5000, 10000, BASE_FREQ);
-  //Serial.println(micros());
-  //Serial.println("After function called");
-  //unsigned long x = micros();
-  //double y = 0.9;
-  //String xStr;
-  //sprintf(xStr, "%d", x);
-  //Serial.println(x);
-  //Serial.println(x+y);
+  segment(2000, 10000, BASE_FREQ);
+  segment(10000, 2000, BASE_FREQ);
   delay(10000);
-  //digitalWrite(stepR, HIGH);
-  //digitalWrite(stepL, HIGH);
-  //delayMicroseconds(10);  
-  //digitalWrite(stepR, LOW);
-  //digitalWrite(stepL, LOW);
-  //delayMicroseconds(stepTime);
+
 }
-
-
-
-
 
 
 void segment(long stepL, long stepR, int BASE_FREQ) {
@@ -81,8 +62,6 @@ void segment(long stepL, long stepR, int BASE_FREQ) {
   unsigned long dTimeR = 2000;
   unsigned long stepsDoneL = 0;
   unsigned long stepsDoneR = 0;
-  
-  
   
   // Take the larger step count and assign BASE_FREQ
   // Adjust so the frequencies allow for the motors to reach the destination at the same time.  
