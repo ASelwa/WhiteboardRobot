@@ -1,4 +1,5 @@
 
+// initialize variables
 int stepR = 13;
 int dirR = 12;
 int stepL = 1;
@@ -11,8 +12,7 @@ int speedL1 = 5;
 int speedL2 = 6;
 int speedL3 = 7;
 
-int stepTime = 1000;
-int counter = 0;
+int stepTime = 200;
 
 // the setup routine runs once when you press reset:
 void setup() {                
@@ -22,7 +22,7 @@ void setup() {
   digitalWrite(dirR, LOW); // shorter
   pinMode(stepL, OUTPUT);  
   pinMode(dirL, OUTPUT);  
-  digitalWrite(dirL, LOW);
+  digitalWrite(dirL, LOW); // shorter
   
   // set speed to 16th steps
   pinMode(speedR1, OUTPUT);
@@ -32,15 +32,14 @@ void setup() {
   pinMode(speedR3, OUTPUT);
   digitalWrite(speedR3, HIGH);
   pinMode(speedL1, OUTPUT);
-  digitalWrite(speedR1, HIGH);  
+  digitalWrite(speedL1, HIGH);  
   pinMode(speedL2, OUTPUT);
-  digitalWrite(speedR2, HIGH);  
+  digitalWrite(speedL2, HIGH);  
   pinMode(speedL3, OUTPUT);
-  digitalWrite(speedR3, HIGH);
-  
+  digitalWrite(speedL3, HIGH);
 }
 
-// the loop routine runs over and over again forever:
+// Main loop
 void loop() {
   digitalWrite(stepR, HIGH);
   digitalWrite(stepL, HIGH);
@@ -48,4 +47,9 @@ void loop() {
   digitalWrite(stepR, LOW);
   digitalWrite(stepL, LOW);
   delayMicroseconds(stepTime);
+  //digitalWrite(stepR, HIGH);
+  digitalWrite(stepL, HIGH);
+  delayMicroseconds(10);  
+  //digitalWrite(stepR, LOW);
+  digitalWrite(stepL, LOW);
 }
