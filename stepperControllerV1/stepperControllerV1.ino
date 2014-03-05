@@ -3,8 +3,8 @@
 
 int pin_stepR = 13;
 int pin_dirR = 12;
-int pin_stepL = 1;
-int pin_dirL = 0;
+int pin_stepL = 3;
+int pin_dirL = 2;
 
 int pin_speedR1 = 9;
 int pin_speedR2 = 10;
@@ -13,15 +13,17 @@ int pin_speedL1 = 5;
 int pin_speedL2 = 6;
 int pin_speedL3 = 7;
 
-double SPEED = 0.00015; // Desired speed in mm/us
-double RADIUS = 15; // Estimate of spool radius in mm
+double SPEED = 0.0001; // Desired speed in mm/us
+double RADIUS = 5; // Estimate of spool radius in mm
 double WIDTH = 1840; // Estimate of whiteboard width in mm
 double HEIGHT = 1000; // Estimate of whiteboard height in mm
 float ANGLE = 1.8*(M_PI/180); // Angle for one full step in rads
 float stepFraction;
 
 // the setup routine runs once when you press reset:
-void setup() {                
+void setup() {     
+  // initialize serial:
+  Serial.begin(9600);
 
   // initialize pins as outputs and initialize direction bits
   pinMode(pin_stepL, OUTPUT);  
@@ -53,13 +55,22 @@ void setup() {
 
 // Main loop
 void loop() {
+  // Open serial monitor, make sure Newline and 9600 are selected
+  // Then send x1,x2,y1,y2
   
-  segment(900, 1200, 1000, 1000);
-  segment(1200, 1200, 1000, 800);
-  segment(1200, 900, 800, 800);
-  segment(900, 900, 800, 1000);
-  delay(10000);
+  // while there is something in the serial buffer
+  while (Serial.available() > 0) {
+    // look for the next valid integer in the incoming serial stream, separated by commas
+    int x1 = Serial.parseInt(); 
+    int x2 = Serial.parseInt(); 
+    int y1 = Serial.parseInt(); 
+    int y2 = Serial.parseInt();
 
+    // look for the newline. Excecute code
+    if (Serial.read() == '\n') {
+      segment(x1,x2,y1,y2);
+    }
+  }
 }
 
 // Function that moves the motors for one segment
