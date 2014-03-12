@@ -13,12 +13,15 @@ int pin_speedL1 = 5;
 int pin_speedL2 = 6;
 int pin_speedL3 = 7;
 
-double SPEED = 0.0001; // Desired speed in mm/us
-double RADIUS = 5; // Estimate of spool radius in mm
-double WIDTH = 1840; // Estimate of whiteboard width in mm
+double SPEED = 0.00007; // Desired speed in mm/us
+double RADIUS = 3; // Estimate of spool radius in mm
+double WIDTH = 1880; // Estimate of whiteboard width in mm
 double HEIGHT = 1000; // Estimate of whiteboard height in mm
 float ANGLE = 1.8*(M_PI/180); // Angle for one full step in rads
 float stepFraction;
+
+double curX; // Current location
+double curY;
 
 // the setup routine runs once when you press reset:
 void setup() {     
@@ -51,10 +54,13 @@ void setup() {
   digitalWrite(pin_speedL3, HIGH);
   
   stepFraction = 16;
+  curX = 600;
+  curY = 600;
 }
 
 // Main loop
 void loop() {
+  //segment(WIDTH/2,WIDTH/2,1000,100);
   // Open serial monitor, make sure Newline and 9600 are selected
   // Then send x1,x2,y1,y2
   
@@ -68,10 +74,28 @@ void loop() {
 
     // look for the newline. Excecute code
     if (Serial.read() == '\n') {
-      segment(x1,x2,y1,y2);
+      longSegment(x1, x2, y1, y2);
+      // Update location
+      //curX += x2 - x1;
+      //curY += y2 - y1;
     }
   }
 }
+
+// Because of non linearity of the lengths l1 and l2, we need to draw short
+// lines so they remain locally linear.
+// Recursively call lines that are a maximum of 20mm
+void longSegment(double x1, double x2, double y1, double y2) {
+  double distance = sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+  if (distance > 20) {
+    longSegment(x1,(x1+x2)/2,y1,(y1+y2)/2);
+    longSegment((x1+x2)/2,x2,(y1+y2)/2,y2);
+  }
+  else {
+    segment(x1,x2,y1,y2);
+  }
+}
+    
 
 // Function that moves the motors for one segment
 void segment(double x1, double x2, double y1, double y2) {
