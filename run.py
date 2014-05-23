@@ -20,12 +20,12 @@ DEVICE = '/dev/ttyACM0'
 PORT = 9600
 
 # Longest length in the drawing
-MAXDIM = 300
+MAXDIM = 100
 
 # Starting location
 # TODO pass these numbers 
 xStart = 600
-yStart = -450
+yStart = -600
 
 def main():
     # Connect to arduino
