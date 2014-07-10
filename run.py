@@ -19,12 +19,12 @@ import dxfgrabber # for reading in dxf files
 PORT = 9600
 
 # Longest length in the drawing
-MAXDIM = 200
+MAXDIM = 300
 
 # Starting location
 # TODO pass these numbers 
-xStart = 320
-yStart = -430
+xStart = 1000
+yStart = -600
 
 def main():
     # Connect to arduino
@@ -37,12 +37,13 @@ def main():
         #print 'is it plugged in?'
         #print 'did you set the right DEVICE and PORT in this file?'
         #exit()
-    # Wait for arduino to connect
-    time.sleep(2)
-    print 'Connected'
+        # Wait for arduino to connect
+        time.sleep(2)
+        print 'Connected'
 
     # Open dxf file
-    dxf = dxfgrabber.readfile("line.dxf")
+    filename = 'line.dxf'
+    dxf = dxfgrabber.readfile(filename)
     lines = [ [],[],[],[] ]
     print 'x1 x2 y1 y2'
     # Get lines
@@ -54,7 +55,7 @@ def main():
         lines[1].append(x2)
         lines[2].append(y1)
         lines[3].append(y2)
-    
+        
     # shift drawing so that origin is at 0,0
     x1Min = min(lines[0])
     x2Min = min(lines[1])
@@ -90,19 +91,24 @@ def main():
         ser.write(str(int(x1))+','+str(int(x2))+','+str(int(y1))+','+str(int(y2))+'\n')
         # Wait for the arduino to finish the line or break after a while
         millis = int(round(time.time() * 1000))
+        print millis
         while(1):
-        	try:
-        		waitline = ser.read()
-        	except serial.SerialException:
-        		print "Something wrong with serial connection?"
-        		break
-        	if waitline == "a":
-        		break
-        	current_millis = int(round(time.time() * 1000))
-        	# Timeout condition
-        	if current_millis > millis + 2000:
-        		print "Timeout"
-        		break
+            try:
+                # TODO: wrap this call in something that will kill it if it's
+                # not done in a few milliseconds
+                waitline = ser.read()
+            except: # serial.SerialException:
+                time.sleep(1)
+                print "Something wrong with serial connection?"
+                break
+            if waitline == "a":
+                break
+            current_millis = int(round(time.time() * 1000))
+            # Timeout condition
+            print current_millis
+            if current_millis > millis + 2000:
+                print "Timeout"
+                break
 
     # To draw line:
     # ser.write('x1,x2,y1,y2\n')
