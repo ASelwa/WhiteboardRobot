@@ -13,10 +13,11 @@ while(1):
 
     # 2 because red wraps around
     # define range of red color in HSV
-    lower_red1 = np.array([160,140,110], dtype=np.uint8)
-    upper_red1 = np.array([180,100,150], dtype=np.uint8)
-    lower_red2 = np.array([0,100,110], dtype=np.uint8)
-    upper_red2 = np.array([20,140,150], dtype=np.uint8)
+    [H1, H2] = [
+    lower_red1 = np.array([H1,S1,V1], dtype=np.uint8)
+    upper_red1 = np.array([180,S2,V2], dtype=np.uint8)
+    lower_red2 = np.array([0,S1,V1], dtype=np.uint8)
+    upper_red2 = np.array([H2,S2,V2], dtype=np.uint8)
 
     # Threshold the HSV image to get only blue colors
     mask1 = cv2.inRange(hsv, lower_red1, upper_red1)

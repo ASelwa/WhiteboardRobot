@@ -16,26 +16,27 @@ import dxfgrabber # for reading in dxf files
 # serial port for arduino: check this in 
 # Tools->Serial Port in your arduino sketch
 # SET THESE!
-DEVICE = '/dev/ttyACM0'
 PORT = 9600
 
 # Longest length in the drawing
-MAXDIM = 100
+MAXDIM = 200
 
 # Starting location
 # TODO pass these numbers 
-xStart = 600
-yStart = -600
+xStart = 320
+yStart = -430
 
 def main():
     # Connect to arduino
+    device = "/dev/ttyAMC1"
     try:
-        ser = serial.Serial(DEVICE, PORT)
+        ser = serial.Serial(device, PORT)
     except serial.SerialException:
-        print 'Oops, couldn\'t connect to the Arduino'
-        print 'is it plugged in?'
-        print 'did you set the right DEVICE and PORT in this file?'
-        exit()
+        ser = serial.Serial('/dev/ttyACM0', PORT)
+        #print 'Oops, couldn\'t connect to the Arduino'
+        #print 'is it plugged in?'
+        #print 'did you set the right DEVICE and PORT in this file?'
+        #exit()
     # Wait for arduino to connect
     time.sleep(2)
     print 'Connected'
@@ -87,7 +88,21 @@ def main():
         print x1,x2,y1,y2
         # The A is to verify that a real signal has been sent
         ser.write(str(int(x1))+','+str(int(x2))+','+str(int(y1))+','+str(int(y2))+'\n')
-        time.sleep(2)
+        # Wait for the arduino to finish the line or break after a while
+        millis = int(round(time.time() * 1000))
+        while(1):
+        	try:
+        		waitline = ser.read()
+        	except serial.SerialException:
+        		print "Something wrong with serial connection?"
+        		break
+        	if waitline == "a":
+        		break
+        	current_millis = int(round(time.time() * 1000))
+        	# Timeout condition
+        	if current_millis > millis + 2000:
+        		print "Timeout"
+        		break
 
     # To draw line:
     # ser.write('x1,x2,y1,y2\n')

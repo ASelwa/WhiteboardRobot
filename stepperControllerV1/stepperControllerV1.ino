@@ -14,7 +14,7 @@ int pin_speedL2 = 6;
 int pin_speedL3 = 7;
 
 double SPEED = 0.00007; // Desired speed in mm/us
-double RADIUS = 3; // Estimate of spool radius in mm
+double RADIUS = 13.5; // Estimate of spool radius in mm
 double WIDTH = 1880; // Estimate of whiteboard width in mm
 double HEIGHT = 1000; // Estimate of whiteboard height in mm
 float ANGLE = 1.8*(M_PI/180); // Angle for one full step in rads
