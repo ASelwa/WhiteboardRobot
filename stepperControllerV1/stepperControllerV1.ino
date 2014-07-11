@@ -82,7 +82,7 @@ void loop() {
       
       // Write "a" so that python can wait to send the next line
       Serial.write("a");
-      delay(10);git 
+      delay(10); 
     }
   }
 }
