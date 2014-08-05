@@ -7,22 +7,58 @@
 import sys
 import serial
 import time
+import subprocess
+import math
 
+SPEED = 5 # mm/s
 PORT = 9600
-alphabet = {'A': [(3, 10), (1.5, -5), (-3, 0), (3, 0), (1.5, -5)], 
-            'B': [(0, 10), (6, 0), (0, -4), (-3.5, -1), (3.5, -1), (0, -4), (-6, 0), (6, 0)], 
-            'C':[(0, 10), (6, 0), (-6, 0), (0, -10), (6, 0)]}
-SPACE = 1
+alphabet = {'A': [(3, 9), (1.5, -4.5), (-3, 0), (3, 0), (1.5, -4.5)],
+            'B': [(0, 9), (4, 0), (2, -1), (0, -2.5), (-2, -1), (-4, 0), (4, 0), (2, -1), (0, -2.5), (-1, -1), (-5,0), (6, 0)],
+            'C': [(2, 0), (-2, 1), (0, 7), (2, 1), (4, 0), (-4, 0), (-2, -1), (0, -7), (2, -1), (4, 0)],
+            'D': [(0, 9), (4, 0), (2, -3), (0, -3), (-2, -3), (-4, 0), (6, 0)],
+            'E': [(0, 9), (6, 0), (-6, 0), (0, -4.5), (4, 0), (-4, 0), (0, -4.5), (6, 0)],
+            'F': [(0, 9), (6, 0), (-6, 0), (0, -4.5), (4, 0), (-4, 0), (0, -6.5), (6, 0), (0, 2)],
+            'G': [(0, 8), (1, 1), (5, 0), (-5, 0), (-1, -1), (0, -8), (5, 0), (1, 1), (0, 3.5), (-3, 0), (3, 0), (0, -3.5), (-1, -1), (1, 0)],
+            'H': [(0, 9), (0, -4.5), (6, 0), (0, 4.5), (0, -9)],
+            'I': [(3, 0), (0, 9), (-3, 0), (6, 0), (-3, 0), (0, -9), (3, 0)],
+            'J': [(0, 1.5), (0, -1.5), (1, -1), (3, 0), (2, 1), (0, 9), (0, -9)],
+            'K': [(0, 9), (0, -4.5), (6, 4.5), (-6, -4.5), (6, -4.5)],
+            'L': [(0, 9), (0, -9), (6, 0), (0,1),(0,-1)],
+            ' ': [(6, 0)],
+            'M': [(0, 9), (3, -4.5), (3, 4.5), (0, -9)],
+            'N': [(0, 9), (6,-9), (0,9), (0,-9)],
+            'O': [(1,0),(-1,1),(0,7),(1,1),(4,0),(1,-1),(0,-7),(-1,-1),(-4,0),(5,0)],
+            'P': [(0,9),(5,0),(1,-1),(0,-2),(-1,-1),(-5,0),(0,-5),(6,0)],
+            'Q': [(1,0),(-1,1),(0,7),(1,1),(4,0),(1,-1),(0,-7),(-1,-1),(-2,2),(3,-2)],
+            'R': [(0,9),(5,0),(1,-1),(0,-2),(-1,-1),(-4,0),(5,-5)],
+            'S': [(0,1),(1,-1),(4,0),(1,1),(0,2),(-6,3),(0,2),(1,1),(4,0),(1,-1),(-1,1),(-4,0),(-1,-1),(0,-2),(6,-3),(0,-2),(-1,-1),(1,0)],
+            'T': [(3,0),(0,9),(-3,0),(6,0),(-3,0),(0,-9),(3,0)],
+            'U': [(1,0),(-1,1),(0,8),(0,-8),(1,-1),(4,0),(1,1),(0,8),(0,-9)],
+            'V': [(3,0),(-3,9),(3,-9),(3,9),(-3,-9),(3,0)],
+            'W': [(2,0),(-2,9),(2,-9),(2,5),(2,-5),(2,9),(-2,-9),(2,0)],
+            'X': [(6,9),(-3,-4.5),(-3,4.5),(6,-9)],
+            'Y': [(3,0),(0,5),(-3,4),(3,-4),(3,4),(-3,-4),(0,-5),(3,0)],
+            '.': [(3,0),(0,2),(0,-2),(3,0)],
+            'Z': [(6,9),(-6,0),(6,0),(-6,-9),(6,0)]}
+
+SPACE = 2
+LEFT_EDGE = 100
+RIGHT_EDGE = 1800
+TOP_EDGE = 100
+BOTTOM_EDGE = 1000
 
 # Connect to arduino
 device = "/dev/ttyAMC1"
 
 def main():   
-    global cur_x, cur_y, ser
+    global cur_x, cur_y, ser, scale
 
     # Starting location
     cur_x = int(sys.argv[1])
     cur_y = -1*int(sys.argv[2])
+    scale = int(sys.argv[3])
+
+    print 'scale: ', scale
 
     # Connect to arduino
     device = "/dev/ttyACM1"
@@ -35,18 +71,65 @@ def main():
         print 'Connected'
 
     while(1):
-        my_string = raw_input('What u got to say?: ')
-        printStringReverse(my_string)
+        my_string = raw_input('What u got to say?: ').upper()
+        # split strings into line lengths
+        words = splitString(my_string, scale)
+        to_print = ''
+        # turn array of words to a single string.
+        for word in words:
+        	to_print = to_print + word + ' ' # need to add a space
+        # split the string by newline characters
+        to_print = to_print.split('\n')
+        print 'To print:'
+        print to_print
+        forward = True
+        # type lines
+        for line_num, line in enumerate(to_print):
+        	if line_num%2 == 0:
+        		printString(line, scale)
+        		draw(0, -20*scale)
+        	else:
+        		printStringReverse(line, scale)
+        		draw(0, -20*scale)
+        
+def splitString(string, scale):
+	''' Return an array of words with newline characters inserted where there
+		should be line breaks according to your current position'''
+	hor_pos = cur_x
+	charwidth = (6 + SPACE) * scale
+	words = []
+	cur_line = 0
+	for word in string.split():
+		# insert new lines when the cursor is near the edge
+		if (len(word)*charwidth > RIGHT_EDGE - 100 - hor_pos) and (cur_line % 2) == 0:
+			words.append('\n')
+			#print 'new line right edge', word, hor_pos
+			cur_line += 1
+		if (len(word)*charwidth > hor_pos - LEFT_EDGE - 100) and (cur_line % 2) == 1:
+			words.append('\n')
+			#print 'new line left edge', word, hor_pos
+			cur_line += 1
+		# update current horizontal position
+		if cur_line % 2 == 0:
+			hor_pos += (len(word)+1) * charwidth
+		else:
+			hor_pos -= (len(word)+1) * charwidth
+		# finally, append the word
+		words.append(word)
+	return words
+
 
 def printStringReverse(string, scale=10):
     for letter in reversed(string):
-        for segment in reversed(alphabet[letter]):
+    	lines = alphabet.get(letter, [(6, 0)])
+        for segment in reversed(lines):
             draw(-1 * scale * segment[0], -1 * scale * segment[1])
         draw(-1*SPACE*scale, 0)
 
 def printString(string, scale=10):
     for letter in string:
-        for segment in alphabet[letter]:
+    	lines = alphabet.get(letter, [(6, 0)])    	
+        for segment in lines:
             draw(scale * segment[0], scale * segment[1])
         draw(SPACE*scale, 0)
 
@@ -59,27 +142,13 @@ def draw(x,y):
     # Update coordinates
     cur_x, cur_y = cur_x + x, cur_y + y
     # Warning if at edge of whiteboard
-    if cur_x > 1700 or cur_x < 100 or -1*cur_y > 1400 or -1*cur_y < 200:
+    if cur_x > RIGHT_EDGE or cur_x < LEFT_EDGE or -1*cur_y > BOTTOM_EDGE or -1*cur_y < TOP_EDGE:
         print "WARNING: edge of board at " + str(cur_x) + ',' + str(cur_y)
         sys.exit()
     # Wait for the arduino to finish the line or break after a while
-    millis = int(round(time.time() * 1000))
-    while(1):
-        try:
-            waitline = ser.read()
-        except: # serial.SerialException:
-            print 'Something wrong with serial connection?'
-            break
-        finally:
-            break
-        if waitline == 'a':
-            break
-        current_millis = int(round(time.time() * 1000))
-        # Timeout condition
-        print current_millis
-        if current_millis > millis + 2000:
-            print 'Timeout'
-            break
+    dist = math.sqrt( x**2 + y**2 )
+    time.sleep(dist/SPEED)
+    
 
 if __name__ == '__main__':
     main()
