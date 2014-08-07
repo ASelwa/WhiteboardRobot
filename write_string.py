@@ -10,7 +10,7 @@ import time
 import subprocess
 import math
 
-SPEED = 5 # mm/s
+SPEED = 2 # mm/s
 PORT = 9600
 alphabet = {'A': [(3, 9), (1.5, -4.5), (-3, 0), (3, 0), (1.5, -4.5)],
             'B': [(0, 9), (4, 0), (2, -1), (0, -2.5), (-2, -1), (-4, 0), (4, 0), (2, -1), (0, -2.5), (-1, -1), (-5,0), (6, 0)],
@@ -57,8 +57,6 @@ def main():
     cur_x = int(sys.argv[1])
     cur_y = -1*int(sys.argv[2])
     scale = int(sys.argv[3])
-
-    print 'scale: ', scale
 
     # Connect to arduino
     device = "/dev/ttyACM1"
@@ -135,7 +133,7 @@ def printString(string, scale=10):
 
 def draw(x,y):
     global cur_x, cur_y, ser
-    print x, y
+    print x, y,
     # The A is to verify that a real signal has been sent
     ser.write(str(int(cur_x))+','+str(int(cur_x+x))+','+
               str(int(cur_y))+','+str(int(cur_y+y))+'\n')
