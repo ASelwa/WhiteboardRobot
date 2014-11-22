@@ -1,0 +1,128 @@
+#!/usr/bin/env python 
+
+# Whiteboard CNC robot
+# Winter 2014
+# Badass residents of 83 D'Arcy 
+
+import sys
+import serial
+import time
+import subprocess
+import math
+from PIL import Image
+
+SPEED = 30 # mm/s
+PORT = 9600
+SPACE = 2
+LEFT_EDGE = 100
+RIGHT_EDGE = 1800
+TOP_EDGE = 100
+BOTTOM_EDGE = 1000
+
+# Connect to arduino
+device = "/dev/ttyACM0"
+device2 = "/dev/ttyAMC1"
+
+def main():   
+    global cur_x, cur_y, scale, ser
+    # get the pic!!
+    imagename = 'testimg.png'
+    img = Image.open(imagename).convert('LA') # greyscale
+    print 'IMAGE SIZE hor_size: ', img.size[0], 'vert_size: ', img.size[1]
+    size = 100, 100 # TODO MOVE THIS
+    img.thumbnail(size, Image.ANTIALIAS)
+    hor_size, vert_size = img.size
+    print 'AFTER SCALING hor_size: ', hor_size, 'vert_size: ', vert_size
+
+    # Starting location
+    cur_x = int(sys.argv[1])
+    cur_y = -1*int(sys.argv[2])
+    scale = int(sys.argv[3])
+    print 'APPROX IMAGE SIZE TO BE PRINTED: ', hor_size*scale, 'x', vert_size*scale, 'mm'
+
+    # Connect to arduino
+    try:
+        ser = serial.Serial(device, PORT)
+        print device
+    except serial.SerialException:
+        ser = serial.Serial(device2, PORT)
+        print device2
+        time.sleep(1)
+    finally:
+        print 'Connected'
+
+    # These are the values which match up with hor_size, vert_size
+    x, y = 0, 0
+    up = True
+    while x < hor_size:
+        if up == True:
+            print 'going up'
+            while y < vert_size:
+                print x, y
+                # the 300 should actually be the max of the image array TODO
+                density = img.getpixel((x, vert_size - 1 - int(y)))[1]/300.0 + 0.1 # 0.1 so that it does move sometimes. 0 < density < 1
+                print 'den: ', density
+                len = (1 - density) * 7 # 20 is just an arbitrary scale for now
+                if len < 0.5:
+                    len = 0.5
+                print 'len: ', len
+                if y * len > vert_size:
+                    len = vert_size - y - 1
+                    if len == 0:
+                        break
+
+                draw(2*scale,0)
+                draw(0,scale*len/2.0)
+                draw(-2*scale,0)
+                draw(0,scale*len/2.0)
+
+                y += len
+            draw(scale*2.2,0)
+            x += 2.2
+            print 'moving over'
+            print 'x, y: ', x, y
+        else:
+            print 'going down'
+            while y > 0:
+                print x, y
+                density = img.getpixel((x, vert_size - 1 - int(y)))[1]/300.0 + 0.1 # 0.1 so that it does move sometimes. 0 < density < 1
+                print 'den: ', density
+                len = (1 - density) * 7
+                if len < 0.5:
+                    len = 0.5
+                print 'len: ', len
+                if y - len < 0:
+                    len = y
+                    if len == 0:
+                        break
+
+                draw(2*scale,0)
+                draw(0,-scale*len/2.0)
+                draw(-scale*2,0)
+                draw(0,-scale*len/2.0)
+
+                y -= len
+            draw(scale*2.2,0)
+            x += 2.2
+            print 'moving over'
+        up = not up
+
+def draw(x,y):
+    global cur_x, cur_y, ser
+    #print '(', x, y, ')',
+    # The A is to verify that a real signal has been sent
+    ser.write(str(int(cur_x))+','+str(int(cur_x+x))+','+
+              str(int(cur_y))+','+str(int(cur_y+y))+'\n')
+    # Update coordinates
+    cur_x, cur_y = cur_x + x, cur_y + y
+    # Warning if at edge of whiteboard
+    if cur_x > RIGHT_EDGE or cur_x < LEFT_EDGE or -1*cur_y > BOTTOM_EDGE or -1*cur_y < TOP_EDGE:
+        print "WARNING: edge of board at " + str(cur_x) + ',' + str(cur_y)
+        sys.exit()
+    # Wait for the arduino to finish the line or break after a while
+    dist = math.sqrt( x**2 + y**2 )
+    time.sleep(1.2*dist/SPEED)
+    
+
+if __name__ == '__main__':
+    main()

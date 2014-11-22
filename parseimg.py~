@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+from PIL import Image
+import numpy as np
+
+size = 100, 100
+img = Image.open('testimg.png').convert('L')
+img.thumbnail(size, Image.ANTIALIAS)
+
+
+x_size, y_size = img.size
+
+for 

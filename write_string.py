@@ -10,7 +10,7 @@ import time
 import subprocess
 import math
 
-SPEED = 2 # mm/s
+SPEED = 25 # mm/s
 PORT = 9600
 alphabet = {'A': [(3, 9), (1.5, -4.5), (-3, 0), (3, 0), (1.5, -4.5)],
             'B': [(0, 9), (4, 0), (2, -1), (0, -2.5), (-2, -1), (-4, 0), (4, 0), (2, -1), (0, -2.5), (-1, -1), (-5,0), (6, 0)],
@@ -48,7 +48,7 @@ TOP_EDGE = 100
 BOTTOM_EDGE = 1000
 
 # Connect to arduino
-device = "/dev/ttyAMC1"
+device = "/dev/ttyACM0"
 
 def main():   
     global cur_x, cur_y, ser, scale
@@ -59,7 +59,7 @@ def main():
     scale = int(sys.argv[3])
 
     # Connect to arduino
-    device = "/dev/ttyACM1"
+    device = "/dev/ttyACM0"
     try:
         ser = serial.Serial(device, PORT)
     except serial.SerialException:
