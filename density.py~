@@ -19,37 +19,36 @@ RIGHT_EDGE = 1800
 TOP_EDGE = 100
 BOTTOM_EDGE = 1000
 
-# Connect to arduino
 device = "/dev/ttyACM0"
 device2 = "/dev/ttyAMC1"
 
 def main():   
     global cur_x, cur_y, scale, ser
-    # get the pic!!
-    imagename = 'testimg.png'
-    img = Image.open(imagename).convert('LA') # greyscale
-    print 'IMAGE SIZE hor_size: ', img.size[0], 'vert_size: ', img.size[1]
-    size = 100, 100 # TODO MOVE THIS
-    img.thumbnail(size, Image.ANTIALIAS)
-    hor_size, vert_size = img.size
-    print 'AFTER SCALING hor_size: ', hor_size, 'vert_size: ', vert_size
-
-    # Starting location
-    cur_x = int(sys.argv[1])
-    cur_y = -1*int(sys.argv[2])
-    scale = int(sys.argv[3])
-    print 'APPROX IMAGE SIZE TO BE PRINTED: ', hor_size*scale, 'x', vert_size*scale, 'mm'
 
     # Connect to arduino
     try:
         ser = serial.Serial(device, PORT)
-        print device
+        print 'Connected to ', device
     except serial.SerialException:
         ser = serial.Serial(device2, PORT)
-        print device2
+        print 'Connected to ', device2
         time.sleep(1)
-    finally:
-        print 'Connected'
+
+    # Get the pic
+    imagename = 'testimg.png'
+    img = Image.open(imagename).convert('L') # greyscale
+    print 'IMAGE SIZE hor_size: ', img.size[0], 'vert_size: ', img.size[1]
+    max_size = 100, 100 # TODO change this
+    img.thumbnail(max_size, Image.ANTIALIAS)
+    hor_size, vert_size = img.size
+    print 'AFTER SCALING hor_size: ', hor_size, 'vert_size: ', vert_size
+
+    # User inputs
+    cur_x = input('current x position in mm: ')
+    cur_y = -1*input('current y position in mm: ')
+    end_x = input('end x position in mm: ')
+    end_y = -1*input('end y position in mm: ')
+    res = input('resolution in mm: ')
 
     # These are the values which match up with hor_size, vert_size
     x, y = 0, 0
@@ -59,11 +58,11 @@ def main():
             print 'going up'
             while y < vert_size:
                 print x, y
-                # the 300 should actually be the max of the image array TODO
-                density = img.getpixel((x, vert_size - 1 - int(y)))[1]/300.0 + 0.1 # 0.1 so that it does move sometimes. 0 < density < 1
+                # pixel density between 0 and 1
+                density = img.getpixel((x, vert_size - 1 - int(y)))/255
                 print 'den: ', density
-                len = (1 - density) * 7 # 20 is just an arbitrary scale for now
-                if len < 0.5:
+                max_len = (1 - density) * scale
+                if max_len < 0.5:
                     len = 0.5
                 print 'len: ', len
                 if y * len > vert_size:
@@ -85,7 +84,7 @@ def main():
             print 'going down'
             while y > 0:
                 print x, y
-                density = img.getpixel((x, vert_size - 1 - int(y)))[1]/300.0 + 0.1 # 0.1 so that it does move sometimes. 0 < density < 1
+                density = img.getpixel((x, vert_size - 1 - int(y)))/300.0 + 0.1 # 0.1 so that it does move sometimes. 0 < density < 1
                 print 'den: ', density
                 len = (1 - density) * 7
                 if len < 0.5:
