@@ -13,7 +13,7 @@ int pin_speedL1 = 5;
 int pin_speedL2 = 6;
 int pin_speedL3 = 7;
 
-double SPEED = 50; // Desired speed in mm/s
+double SPEED = 20; // Desired speed in mm/s
 double RADIUS = 13.5; // Estimate of spool radius in mm
 double WIDTH = 1880; // Estimate of whiteboard width in mm
 double HEIGHT = 1000; // Estimate of whiteboard height in mm

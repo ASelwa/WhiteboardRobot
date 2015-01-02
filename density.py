@@ -9,21 +9,16 @@ import serial
 import time
 import subprocess
 import math
-from PIL import Image
+from PIL import Image, ImageDraw
 
-SPEED = 30 # mm/s
+SPEED = 40 # mm/s
 PORT = 9600
-SPACE = 2
-LEFT_EDGE = 100
-RIGHT_EDGE = 1800
-TOP_EDGE = 100
-BOTTOM_EDGE = 1000
-HORIZONTAL_SPACE = 1.1
-VERT_RES = 0.2
-MAX_PIC_SIZE = 100, 100
+MAX_PIC_SIZE = 800, 800
+THRESH = 0.05
+HOR_RES = 3
 
-device = "/dev/ttyACM0"
-device2 = "/dev/ttyAMC1"
+device = "/dev/ttyACM1"
+device2 = "/dev/ttyACM0"
 
 def main():   
     global cur_x, cur_y, ser
@@ -32,24 +27,36 @@ def main():
     try:
         ser = serial.Serial(device, PORT)
         print 'Connected to ', device
-    except serial.SerialException:
+    except OSError:
         ser = serial.Serial(device2, PORT)
         print 'Connected to ', device2
         time.sleep(1)
 
     # Get the pic
-    imagename = 'test.png'
+    imagename = 'marilyn-monroe.png'
     img = Image.open(imagename).convert('L') # greyscale
+
+    # Keep a high res version for annotating lines on top of
+    #img_high_res = Image.open(imagename)
+    img_high_res = Image.new("RGB",img.size,'white')
+    annotation = ImageDraw.Draw(img_high_res)
+
     print 'IMAGE SIZE hor_pic_size: ', img.size[0], 'vert_pic_size: ', img.size[1]
     img.thumbnail(MAX_PIC_SIZE, Image.ANTIALIAS)
     hor_pics, vert_pics = img.size
     print 'AFTER SCALING hor_pics: ', hor_pics, 'vert_pics: ', vert_pics
+
+    # Full size picture to thumbnail conversion
+    image_scale = img_high_res.size[0] / float(hor_pics)
 
     # User inputs, remember that y is -'ve in my coor system but +'ve in pixel space
     start_x = input('current x position in mm: ')
     start_y = input('current y position in mm: ')
     end_x = input('end x position in mm: ')
     end_y = input('end y position in mm: ')
+
+    # For a completely white pixel, what is the distance in pixels?
+    max_distance_pixels = vert_pics * 1
 
     # Does the vertical or horizontal dimension determine the picture scale?
     dwg_ratio = vert_pics/float(hor_pics)
@@ -65,28 +72,114 @@ def main():
         done_x = end_x
         print "X dimension is max"
 
-    right = True
-    up = False
-
+    # Delta distance in mm
     del_x = abs(done_x - start_x)
     del_y = abs(done_y - start_y)
 
+    # Conversion factor between pixels and mm
+    scale = del_x / hor_pics
+
+    # Starting Conditions
     cur_x = start_x
     cur_y = start_y
-    cur_x_pix = 0
-    cur_y_pix = 0
-    prev_x_pix = -1
-    prev_y_pix = -1
+    x = 0
+    y = 0
+    right = True
+    up = False
 
     # Draw the picture
-    while cur_x_pix < hor_pics:
+    while x < hor_pics:
+        print "~~~~~"
         # get the x, y location in pixel space
-        x = int( ( (cur_x - start_x) / float(del_x) ) * hor_pics )
-        y = abs(int( ( (cur_y - start_y) / float(del_y) ) * hor_pics ))
-        # Need to lookup density value!!
+        #x = int( ( (cur_x - start_x) / float(del_x) ) * hor_pics )
+        print "x: ", x
+        #y = abs(int( ( (cur_y - start_y) / float(del_y) ) * hor_pics ))
+        print "y: ", y
+
+        # Lookup Density Value, black gets mapped to 0 by getpixel()
+        density = 1 - (img.getpixel((x,y)) / float(255))
+        print "pixel density: ", density
+
+        # Calculate line length
+        distance = int( max_distance_pixels * (1 - density) )
+        #distance = vert_pics
+        print "calculated distance", distance
+        
+        # We have to go forward at minimum one pixel
+        distance = max(1, distance)
+        
+        # Edge case for the edge of the picture
+        if up:
+            distance = min(distance, y)
+        else:
+            distance = min(distance, vert_pics - 1 - y)
+        print "distance: ", distance
+        
+        if up:
+            distance *= -1
+
+        # Cut the distance short if there is an abrupt change in darkness
+        for i in range(abs(distance)):
+            if up: i *= -1
+            new_density = (1 - img.getpixel((x,y+i))/float(255))
+            if abs(new_density - density) > THRESH:
+                distance = i
+                break
+
+        if up: color = 'blue'
+        else: color = 'red'
+        # Move the marker
+        draw(0, scale*distance)
+        annotation.line( (int(x*image_scale),
+                          int(y*image_scale),
+                          int(x*image_scale),
+                          int((y+distance)*image_scale)), fill=color)
+
+        # update coordinates
+        y += distance
+
+        # if we're at the top, then move over
+        if y == 0 or y == vert_pics - 1:
+            if right:
+                pass
+                draw(scale * (1 + HOR_RES), 0)
+                annotation.line( (int(x*image_scale),
+                                  int(y*image_scale),
+                                  int((x+HOR_RES+1)*image_scale),
+                                  int((y)*image_scale)), fill=color)
+                x += HOR_RES + 1
+            else:
+                draw(scale * 1, 0)
+                annotation.line( (int(x*image_scale),
+                                  int(y*image_scale),
+                                  int((x+1)*image_scale),
+                                  int((y)*image_scale)), fill=color)
+                x += 1
+                right = True
+            up = not up
+            continue
+
+        # move sideways
+        if right:
+            pass
+            draw(scale * HOR_RES, 0)
+            annotation.line( (int(x*image_scale),
+                              int(y*image_scale),
+                              int((x+HOR_RES)*image_scale),
+                              int(y*image_scale)), fill=color)
+            x += HOR_RES
+        else:
+            pass
+            draw(-scale * HOR_RES, 0)
+            annotation.line( (int(x*image_scale),
+                              int(y*image_scale),
+                              int((x-HOR_RES)*image_scale),
+                              int(y*image_scale)), fill=color)
+            x -= HOR_RES
+        right = not right
 
     print "ok, all done"
-
+    img_high_res.show()
         
 def draw(x,y):
     global cur_x, cur_y, ser
@@ -96,6 +189,9 @@ def draw(x,y):
     cur_x, cur_y = cur_x + x, cur_y + y
     dist = math.sqrt( x**2 + y**2 )
     time.sleep( 1.2 * dist/SPEED)
+    # pause after horizontal movement to slow down swinging
+    if x > y:
+        time.sleep(0.1)
 
 if __name__ == '__main__':
     main()
