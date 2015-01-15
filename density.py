@@ -11,11 +11,11 @@ import subprocess
 import math
 from PIL import Image, ImageDraw
 
-SPEED = 40 # mm/s
+SPEED = 30 # mm/s
 PORT = 9600
-MAX_PIC_SIZE = 800, 800
-THRESH = 0.05
-HOR_RES = 3
+MAX_PIC_SIZE = 1000, 1000
+THRESH = 0.1
+HOR_RES = 2
 
 device = "/dev/ttyACM1"
 device2 = "/dev/ttyACM0"
@@ -33,7 +33,7 @@ def main():
         time.sleep(1)
 
     # Get the pic
-    imagename = 'marilyn-monroe.png'
+    imagename = 'cage.png'
     img = Image.open(imagename).convert('L') # greyscale
 
     # Keep a high res version for annotating lines on top of
@@ -188,10 +188,7 @@ def draw(x,y):
     # Update coordinates
     cur_x, cur_y = cur_x + x, cur_y + y
     dist = math.sqrt( x**2 + y**2 )
-    time.sleep( 1.2 * dist/SPEED)
-    # pause after horizontal movement to slow down swinging
-    if x > y:
-        time.sleep(0.1)
+    time.sleep( 1.1 * dist/SPEED)
 
 if __name__ == '__main__':
     main()
