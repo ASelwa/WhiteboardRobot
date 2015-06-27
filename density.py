@@ -1,8 +1,8 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 # Whiteboard CNC robot
 # Winter 2014
-# Badass residents of 83 D'Arcy 
+# Badass residents of 83 D'Arcy
 
 import sys
 import serial
@@ -13,19 +13,19 @@ from PIL import Image, ImageDraw
 
 SPEED = 30 # mm/s
 PORT = 9600
-MAX_PIC_SIZE = 1000, 1000
+MAX_PIC_SIZE = 1600, 1600
 THRESH = 0.1
-HOR_RES = 2
+HOR_RES = 5
 
 device = "/dev/ttyACM1"
 device2 = "/dev/ttyACM0"
 
-def main():   
+def main():
     global cur_x, cur_y, ser
 
     # Connect to arduino
     try:
-        ser = serial.Serial(device, PORT)
+#        ser = serial.Serial(device, PORT)
         print 'Connected to ', device
     except OSError:
         ser = serial.Serial(device2, PORT)
@@ -33,7 +33,7 @@ def main():
         time.sleep(1)
 
     # Get the pic
-    imagename = 'cage.png'
+    imagename = 'roy.jpg'
     img = Image.open(imagename).convert('L') # greyscale
 
     # Keep a high res version for annotating lines on top of
@@ -77,7 +77,7 @@ def main():
     del_y = abs(done_y - start_y)
 
     # Conversion factor between pixels and mm
-    scale = del_x / hor_pics
+    scale = del_x / float(hor_pics)
 
     # Starting Conditions
     cur_x = start_x
@@ -104,17 +104,17 @@ def main():
         distance = int( max_distance_pixels * (1 - density) )
         #distance = vert_pics
         print "calculated distance", distance
-        
+
         # We have to go forward at minimum one pixel
         distance = max(1, distance)
-        
+
         # Edge case for the edge of the picture
         if up:
             distance = min(distance, y)
         else:
             distance = min(distance, vert_pics - 1 - y)
         print "distance: ", distance
-        
+
         if up:
             distance *= -1
 
@@ -180,15 +180,17 @@ def main():
 
     print "ok, all done"
     img_high_res.show()
-        
+
 def draw(x,y):
+    return
     global cur_x, cur_y, ser
     ser.write(str(int(cur_x))+','+str(int(cur_x+x))+','+
               str(int(cur_y))+','+str(int(cur_y+y))+'\n')
+    print str(int(cur_x))+','+str(int(cur_x+x))+','+ str(int(cur_y))+','+str(int(cur_y+y))
     # Update coordinates
     cur_x, cur_y = cur_x + x, cur_y + y
     dist = math.sqrt( x**2 + y**2 )
-    time.sleep( 1.1 * dist/SPEED)
+    time.sleep( 1.3 * dist/SPEED)
 
 if __name__ == '__main__':
     main()
